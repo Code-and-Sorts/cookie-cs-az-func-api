@@ -3,6 +3,8 @@
 > [!IMPORTANT]
 > This example Dotnet Azure Function API was generated using the [Cookiecutter API](https://github.com/Code-and-Sorts/cookiecutter-api) template.
 
+[![](https://img.shields.io/badge/made%20using%20cookiecutter%20api-grey?style=for-the-badge&logo=cookiecutter)](https://github.com/Code-and-Sorts/cookiecutter-api)
+
 ## Overview
 
 This project is a Dotnet-based REST API built using [Azure Function Apps](https://learn.microsoft.com/en-us/azure/azure-functions/). The API leverages Azure's serverless architecture, allowing you to deploy and scale functions effortlessly in the cloud. The HTTP-triggered functions serve as the endpoints for the API, providing a seamless way to handle client requests.
@@ -98,7 +100,7 @@ make test-unit
 
 ```text
 ├── cookiecutter-template-dotnet
-    ├── Dotnet.Api
+    ├── KittyClaws.Api
     │   ├── Controllers
     │   ├── Functions
     │   ├── Interfaces
@@ -110,7 +112,7 @@ make test-unit
     │   │   ├── Entities
     │   │   └── schemas
     │   └── utils
-    └── Dotnet.Api.Tests.Unit
+    └── KittyClaws.Api.Tests.Unit
         ├── Controllers
         ├── Functions
         ├── Repositories
