@@ -116,22 +116,36 @@ public class KittyClawsRepositoryTest
     }
 
     [Fact]
-    public async Task DeleteAsync_ShouldCallDeleteItemAsync()
+    public async Task DeleteAsync_ShouldMarkItemAsDeleted()
     {
         // Arrange
-        var mockResponse = Substitute.For<ItemResponse<KittyClaws>>();
-        _mockContainer.DeleteItemAsync<KittyClaws>(
-            Arg.Any<string>(),
-            Arg.Any<PartitionKey>(),
-            Arg.Any<ItemRequestOptions>(),
-            Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(mockResponse));
+        var id = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
+        var existingKittyClaws = new KittyClaws
+        {
+            Id = id,
+            Name = "mockKittyClaws",
+            IsDeleted = false
+        };
 
+        var mockResponse = Substitute.For<ItemResponse<KittyClaws>>();
+        mockResponse.Resource.Returns(existingKittyClaws);
+
+        _mockContainer.ReadItemAsync<KittyClaws>(
+            id,
+            new PartitionKey(id),
+            null,
+            Arg.Any<CancellationToken>())
+            .Returns(mockResponse);
 
         // Act
-        await _repository.DeleteAsync("0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c", CancellationToken.None);
+        await _repository.DeleteAsync(id, CancellationToken.None);
 
         // Assert
-        await _mockContainer.Received(1).DeleteItemAsync<KittyClaws>("0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c", new PartitionKey("0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c"), Arg.Any<ItemRequestOptions>(), Arg.Any<CancellationToken>());
+        await _mockContainer.Received(1).ReplaceItemAsync(
+            Arg.Is<KittyClaws>(k => k.IsDeleted == true),
+            id,
+            Arg.Any<PartitionKey>(),
+            null,
+            Arg.Any<CancellationToken>());
     }
 }

@@ -19,15 +19,21 @@ public class KittyClawsRepository : IKittyClawsRepository
         _container = cosmosClient.GetContainer(databaseName, containerName);
     }
 
-    public async Task<KittyClawsDto> GetAsync(string id, CancellationToken ct)
+    private async Task<KittyClaws> GetItemAsync(string id, CancellationToken ct)
     {
         var response = await _container.ReadItemAsync<KittyClaws>(id, new PartitionKey(id), null, ct);
         var kittyCat = response.Resource;
 
         if (kittyCat.IsDeleted)
         {
-            throw new Exception("Item not found");
+            throw new CosmosException("Item not found", System.Net.HttpStatusCode.NotFound, 0, string.Empty, 0);
         }
+        return kittyCat;
+    }
+
+    public async Task<KittyClawsDto> GetAsync(string id, CancellationToken ct)
+    {
+        var kittyCat = await GetItemAsync(id, ct);
 
         return new KittyClawsDto
         {
@@ -69,14 +75,14 @@ public class KittyClawsRepository : IKittyClawsRepository
 
     public async Task<KittyClawsDto> UpdateAsync(KittyClaws item, CancellationToken ct)
     {
-        var currentItem = await _container.ReadItemAsync<KittyClaws>(item.Id, new PartitionKey(item.Id), null, ct);
+        var currentItem = await GetItemAsync(item.Id, ct);
         var updateItem = new KittyClaws
         {
-            Id = currentItem.Resource.Id,
-            Name = currentItem.Resource.Name ?? item.Name,
-            CreatedBy = currentItem.Resource.CreatedBy,
-            CreatedTimestamp = currentItem.Resource.CreatedTimestamp,
-            UpdatedBy = item.UpdatedBy ?? currentItem.Resource.UpdatedBy,
+            Id = currentItem.Id,
+            Name = item.Name ?? currentItem.Name,
+            CreatedBy = currentItem.CreatedBy,
+            CreatedTimestamp = currentItem.CreatedTimestamp,
+            UpdatedBy = item.UpdatedBy ?? currentItem.UpdatedBy,
             UpdatedTimestamp = DateTime.UtcNow,
         };
         var response = await _container.ReplaceItemAsync<KittyClaws>(updateItem, updateItem.Id, new PartitionKey(updateItem.Id), null, ct);
@@ -90,6 +96,8 @@ public class KittyClawsRepository : IKittyClawsRepository
 
     public async Task DeleteAsync(string id, CancellationToken ct)
     {
-        await _container.DeleteItemAsync<KittyClaws>(id, new PartitionKey(id), null, ct);
+        var item = await GetItemAsync(id, ct);
+        item.IsDeleted = true;
+        var response = await _container.ReplaceItemAsync<KittyClaws>(item, item.Id, new PartitionKey(item.Id), null, ct);
     }
 }
