@@ -13,6 +13,8 @@ using KittyClaws.Api.Requests;
 using KittyClaws.Api.Dtos;
 using NSubstitute.ExceptionExtensions;
 using KittyClaws.Api.Utils;
+using System.IO;
+using Newtonsoft.Json;
 
 public class UpdateKittyClawsTest
 {
@@ -34,15 +36,21 @@ public class UpdateKittyClawsTest
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
         var updateKittyClawsRequest = new UpdateKittyClawsRequest { Name = "mockKittyClaws" };
         var newKittyClawsDto = new KittyClawsDto { Id = kittyCatId, Name = "mockKittyClaws" };
-        _mockKittyClawsController.UpdateAsync(updateKittyClawsRequest, Arg.Any<CancellationToken>()).Returns(Task.FromResult(newKittyClawsDto));
+        var httpRequestData = Mocks.CreateHttpRequestData(updateKittyClawsRequest, "PATCH");
+
+        _mockKittyClawsController.UpdateAsync(kittyCatId, Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(newKittyClawsDto));
 
         // Act
-        var result = await _updateKittyClawsFunction.Patch(updateKittyClawsRequest, kittyCatId);
+        var response = await _updateKittyClawsFunction.Patch(httpRequestData, kittyCatId);
+
+        var updatedResult = Assert.IsType<OkObjectResult>(response);
+        var responseBody = JsonConvert.SerializeObject(updatedResult.Value);
+        var responseDto = JsonConvert.DeserializeObject<KittyClawsDto>(responseBody);
 
         // Assert
-        var updatedResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, updatedResult.StatusCode);
-        Assert.Equal(newKittyClawsDto, updatedResult.Value);
+        Assert.Equal(newKittyClawsDto.Name, responseDto.Name);
     }
 
     [Fact]
@@ -51,15 +59,19 @@ public class UpdateKittyClawsTest
         // Arrange
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
         var updateKittyClawsRequest = new UpdateKittyClawsRequest { Name = "mockKittyClaws" };
-        _mockKittyClawsController.UpdateAsync(updateKittyClawsRequest, Arg.Any<CancellationToken>()).Throws(new Exception("Mock exception"));
+        var httpRequestData = Mocks.CreateHttpRequestData(updateKittyClawsRequest, "PATCH");
+
+        _mockKittyClawsController.UpdateAsync(kittyCatId, Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Throws(new Exception("Mock exception"));
 
         // Act
-        var result = await _updateKittyClawsFunction.Patch(updateKittyClawsRequest, kittyCatId);
+        var response = await _updateKittyClawsFunction.Patch(httpRequestData, kittyCatId);
+
+        var updatedResult = Assert.IsType<HttpResponseInit>(response);
+        var errorResult = Assert.IsType<BaseError>(updatedResult.Value);
 
         // Assert
-        var objectResult = Assert.IsType<HttpResponseInit>(result);
-        Assert.Equal(500, objectResult.StatusCode);
-        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
+        Assert.Equal(500, updatedResult.StatusCode);
         Assert.Equal("Mock exception", errorResult.ErrorMessage);
     }
 }

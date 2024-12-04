@@ -32,15 +32,18 @@ public class DeleteKittyClawsTest
         // Arrange
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
         var deleteKittyClawsDto = new KittyClawsDto { Id = kittyCatId, Name = "mockKittyClaws" };
+        var httpRequestData = Mocks.CreateHttpRequestData(deleteKittyClawsDto, "DELETE");
+
         _mockKittyClawsController.DeleteAsync(kittyCatId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(deleteKittyClawsDto));
 
         // Act
-        var result = await _deleteKittyClawsFunction.Delete(kittyCatId);
+        var result = await _deleteKittyClawsFunction.Delete(httpRequestData, kittyCatId);
+
+        var deleteResult = Assert.IsType<OkObjectResult>(result);
+        var errorResult = Assert.IsType<DeleteOkObjectResult>(deleteResult.Value);
 
         // Assert
-        var deleteResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, deleteResult.StatusCode);
-        var errorResult = Assert.IsType<DeleteOkObjectResult>(deleteResult.Value);
         Assert.Equal("KittyClaws with id 0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c was deleted successfully.", errorResult.Message);
     }
 
@@ -49,15 +52,19 @@ public class DeleteKittyClawsTest
     {
         // Arrange
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
+        var deleteKittyClawsDto = new KittyClawsDto { Id = kittyCatId, Name = "mockKittyClaws" };
+        var httpRequestData = Mocks.CreateHttpRequestData(deleteKittyClawsDto, "DELETE");
+
         _mockKittyClawsController.DeleteAsync(kittyCatId, Arg.Any<CancellationToken>()).Throws(new Exception("Mock exception"));
 
         // Act
-        var result = await _deleteKittyClawsFunction.Delete(kittyCatId);
+        var result = await _deleteKittyClawsFunction.Delete(httpRequestData, kittyCatId);
+
+        var objectResult = Assert.IsType<HttpResponseInit>(result);
+        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
 
         // Assert
-        var objectResult = Assert.IsType<HttpResponseInit>(result);
         Assert.Equal(500, objectResult.StatusCode);
-        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
         Assert.Equal("Mock exception", errorResult.ErrorMessage);
     }
 }

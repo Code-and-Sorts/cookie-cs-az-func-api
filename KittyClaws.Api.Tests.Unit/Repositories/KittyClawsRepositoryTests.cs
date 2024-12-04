@@ -59,7 +59,7 @@ public class KittyClawsRepositoryTest
         feedIterator.HasMoreResults.Returns(true, false);
         feedIterator.ReadNextAsync(Arg.Any<CancellationToken>()).Returns(feedResponse);
 
-        _mockContainer.GetItemQueryIterator<KittyClaws>()
+        _mockContainer.GetItemQueryIterator<KittyClaws>("SELECT * FROM c WHERE c.isDeleted = false")
             .Returns(feedIterator);
 
         // Act

@@ -13,6 +13,11 @@ using KittyClaws.Api.Requests;
 using KittyClaws.Api.Dtos;
 using NSubstitute.ExceptionExtensions;
 using KittyClaws.Api.Utils;
+using Microsoft.Azure.Functions.Worker.Http;
+using Newtonsoft.Json;
+using System.IO;
+using System.Text;
+using Microsoft.Azure.Functions.Worker;
 
 public class CreateKittyClawsTest
 {
@@ -33,32 +38,43 @@ public class CreateKittyClawsTest
         // Arrange
         var createKittyClawsRequest = new CreateKittyClawsRequest { Name = "mockKittyClaws" };
         var newKittyClawsDto = new KittyClawsDto { Id = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c", Name = "mockKittyClaws" };
-        _mockKittyClawsController.CreateAsync(createKittyClawsRequest, Arg.Any<CancellationToken>()).Returns(Task.FromResult(newKittyClawsDto));
+        var httpRequestData = Mocks.CreateHttpRequestData(createKittyClawsRequest, "POST");
+
+        _mockKittyClawsController.CreateAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(newKittyClawsDto));
 
         // Act
-        var result = await _createKittyClawsFunction.Post(createKittyClawsRequest);
+        var response = await _createKittyClawsFunction.Post(httpRequestData);
+
+        var createdResult = Assert.IsType<CreatedResult>(response);
+        var responseBody = JsonConvert.SerializeObject(createdResult.Value);
+        var responseDto = JsonConvert.DeserializeObject<KittyClawsDto>(responseBody);
 
         // Assert
-        var createdResult = Assert.IsType<CreatedResult>(result);
         Assert.Equal(201, createdResult.StatusCode);
-        Assert.Equal($"/api/kitties", createdResult.Location);
-        Assert.Equal(newKittyClawsDto, createdResult.Value);
+        Assert.Equal(newKittyClawsDto.Id, responseDto.Id);
+        Assert.Equal(newKittyClawsDto.Name, responseDto.Name);
     }
+
 
     [Fact]
     public async Task Post_ReturnsErrorResult_WhenExceptionIsThrown()
     {
         // Arrange
         var createKittyClawsRequest = new CreateKittyClawsRequest { Name = "mockKittyClaws" };
-        _mockKittyClawsController.CreateAsync(createKittyClawsRequest, Arg.Any<CancellationToken>()).Throws(new Exception("Mock exception"));
+        var httpRequestData = Mocks.CreateHttpRequestData(createKittyClawsRequest, "POST");
+
+        _mockKittyClawsController.CreateAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Throws(new Exception("Mock exception"));
 
         // Act
-        var result = await _createKittyClawsFunction.Post(createKittyClawsRequest);
+        var response = await _createKittyClawsFunction.Post(httpRequestData);
+
+        var createdResult = Assert.IsType<HttpResponseInit>(response);
+        var errorResult = Assert.IsType<BaseError>(createdResult.Value);
 
         // Assert
-        var objectResult = Assert.IsType<HttpResponseInit>(result);
-        Assert.Equal(500, objectResult.StatusCode);
-        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
+        Assert.Equal(500, createdResult.StatusCode);
         Assert.Equal("Mock exception", errorResult.ErrorMessage);
     }
 }

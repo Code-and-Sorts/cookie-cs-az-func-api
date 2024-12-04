@@ -4,26 +4,20 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using KittyClaws.Api.Interfaces;
 using KittyClaws.Api.Utils;
+using Microsoft.Azure.Functions.Worker.Http;
 
-public class GetKittyClaws
+public class GetKittyClaws(IKittyClawsController kittyCatController, ILogger<GetKittyClaws> logger)
 {
-    private readonly IKittyClawsController _kittyCatController;
-    private readonly ILogger<GetKittyClaws> _logger;
+    private readonly IKittyClawsController _kittyCatController = kittyCatController;
+    private readonly ILogger<GetKittyClaws> _logger = logger;
 
-    public GetKittyClaws(IKittyClawsController kittyCatController, ILogger<GetKittyClaws> logger)
-    {
-        _kittyCatController = kittyCatController;
-        _logger = logger;
-    }
-
-    [FunctionName("GetKittyClaws")]
+    [Function("GetKittyClaws")]
     public async Task<IActionResult> Get(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "kitties/{id}")] string id, CancellationToken ct = default)
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "kitties/{id}")] HttpRequestData req, string id, CancellationToken ct = default)
     {
         _logger.LogInformation($"{nameof(GetKittyClaws)} processed a request.");
 

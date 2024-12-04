@@ -36,13 +36,15 @@ public class GetKittyClawsListTest
             new KittyClawsDto { Id = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c", Name = "mockKittyClaws1" },
             new KittyClawsDto { Id = "5615ff05-3032-4459-88ad-b6a4c3e51ca0", Name = "mockKittyClaws2" },
         };
+
         _mockKittyClawsController.GetListAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult((IEnumerable<KittyClawsDto>)getListKittyClawsDto));
 
         // Act
         var result = await _getKittyClawsFunction.Get();
 
-        // Assert
         var getResult = Assert.IsType<OkObjectResult>(result);
+
+        // Assert
         Assert.Equal(200, getResult.StatusCode);
         Assert.Equal(getListKittyClawsDto, getResult.Value);
     }
@@ -56,10 +58,11 @@ public class GetKittyClawsListTest
         // Act
         var result = await _getKittyClawsFunction.Get();
 
-        // Assert
         var objectResult = Assert.IsType<HttpResponseInit>(result);
-        Assert.Equal(500, objectResult.StatusCode);
         var errorResult = Assert.IsType<BaseError>(objectResult.Value);
+
+        // Assert
+        Assert.Equal(500, objectResult.StatusCode);
         Assert.Equal("Mock exception", errorResult.ErrorMessage);
     }
 }

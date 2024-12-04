@@ -4,31 +4,25 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using KittyClaws.Api.Interfaces;
 using KittyClaws.Api.Utils;
+using Microsoft.Azure.Functions.Worker.Http;
 
 public class DeleteOkObjectResult
 {
-    public string Message { get; set; }
+    public required string Message { get; set; }
 }
 
-public class DeleteKittyClaws
+public class DeleteKittyClaws(IKittyClawsController kittyCatController, ILogger<DeleteKittyClaws> logger)
 {
-    private readonly IKittyClawsController _kittyCatController;
-    private readonly ILogger<DeleteKittyClaws> _logger;
+    private readonly IKittyClawsController _kittyCatController = kittyCatController;
+    private readonly ILogger<DeleteKittyClaws> _logger = logger;
 
-    public DeleteKittyClaws(IKittyClawsController kittyCatController, ILogger<DeleteKittyClaws> logger)
-    {
-        _kittyCatController = kittyCatController;
-        _logger = logger;
-    }
-
-    [FunctionName("DeleteKittyClaws")]
+    [Function("DeleteKittyClaws")]
     public async Task<IActionResult> Delete(
-        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "kitties/{id}")] string id, CancellationToken ct = default)
+        [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "kitties/{id}")] HttpRequestData req, string id, CancellationToken ct = default)
     {
         _logger.LogInformation($"{nameof(DeleteKittyClaws)} processed a request.");
 

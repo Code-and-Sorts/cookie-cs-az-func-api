@@ -31,14 +31,17 @@ public class GetKittyClawsTest
     {
         // Arrange
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
-        var getKittyClawsDto = new KittyClawsDto { Id = kittyCatId, Name = "mockKittyClaws" };
+        var getKittyClawsDto = new KittyClawsDto { Name = "mockKittyClaws" };
+        var httpRequestData = Mocks.CreateHttpRequestData(getKittyClawsDto, "GET");
+
         _mockKittyClawsController.GetAsync(kittyCatId, Arg.Any<CancellationToken>()).Returns(Task.FromResult(getKittyClawsDto));
 
         // Act
-        var result = await _getKittyClawsFunction.Get(kittyCatId);
+        var result = await _getKittyClawsFunction.Get(httpRequestData, kittyCatId);
+
+        var getResult = Assert.IsType<OkObjectResult>(result);
 
         // Assert
-        var getResult = Assert.IsType<OkObjectResult>(result);
         Assert.Equal(200, getResult.StatusCode);
         Assert.Equal(getKittyClawsDto, getResult.Value);
     }
@@ -48,15 +51,19 @@ public class GetKittyClawsTest
     {
         // Arrange
         var kittyCatId = "0f3a7ff7-a601-4d23-b33c-7f8f18b57a4c";
+        var getKittyClawsDto = new KittyClawsDto { Name = "mockKittyClaws" };
+        var httpRequestData = Mocks.CreateHttpRequestData(getKittyClawsDto, "GET");
+
         _mockKittyClawsController.GetAsync(kittyCatId, Arg.Any<CancellationToken>()).Throws(new Exception("Mock exception"));
 
         // Act
-        var result = await _getKittyClawsFunction.Get(kittyCatId);
+        var result = await _getKittyClawsFunction.Get(httpRequestData, kittyCatId);
+
+        var objectResult = Assert.IsType<HttpResponseInit>(result);
+        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
 
         // Assert
-        var objectResult = Assert.IsType<HttpResponseInit>(result);
         Assert.Equal(500, objectResult.StatusCode);
-        var errorResult = Assert.IsType<BaseError>(objectResult.Value);
         Assert.Equal("Mock exception", errorResult.ErrorMessage);
     }
 }

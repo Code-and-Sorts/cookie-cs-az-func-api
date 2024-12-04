@@ -4,34 +4,26 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using KittyClaws.Api.Interfaces;
-using KittyClaws.Api.Requests;
 using KittyClaws.Api.Utils;
+using Microsoft.Azure.Functions.Worker.Http;
 
-public class UpdateKittyClaws
+public class UpdateKittyClaws(IKittyClawsController kittyCatController, ILogger<UpdateKittyClaws> logger)
 {
-    private readonly IKittyClawsController _kittyCatController;
-    private readonly ILogger<UpdateKittyClaws> _logger;
+    private readonly IKittyClawsController _kittyCatController = kittyCatController;
+    private readonly ILogger<UpdateKittyClaws> _logger = logger;
 
-    public UpdateKittyClaws(IKittyClawsController kittyCatController, ILogger<UpdateKittyClaws> logger)
-    {
-        _kittyCatController = kittyCatController;
-        _logger = logger;
-    }
-
-    [FunctionName("UpdateKittyClaws")]
+    [Function("UpdateKittyClaws")]
     public async Task<IActionResult> Patch(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "patch", Route = "kitties/{id}")] UpdateKittyClawsRequest updateKittyClawsRequest, string id, CancellationToken ct = default)
+        [HttpTrigger(AuthorizationLevel.Function, "patch", Route = "kitties/{id}")] HttpRequestData updateKittyClawsRequest, string id, CancellationToken ct = default)
     {
         _logger.LogInformation($"{nameof(UpdateKittyClaws)} processed a request.");
 
         try
         {
-            updateKittyClawsRequest.Id = id;
-            var updatedKittyClawsDto = await _kittyCatController.UpdateAsync(updateKittyClawsRequest, ct);
+            var updatedKittyClawsDto = await _kittyCatController.UpdateAsync(id, updateKittyClawsRequest.Body, ct);
 
             return new OkObjectResult(updatedKittyClawsDto);
         }

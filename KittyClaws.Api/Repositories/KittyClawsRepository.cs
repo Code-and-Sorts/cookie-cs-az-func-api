@@ -22,17 +22,23 @@ public class KittyClawsRepository : IKittyClawsRepository
     public async Task<KittyClawsDto> GetAsync(string id, CancellationToken ct)
     {
         var response = await _container.ReadItemAsync<KittyClaws>(id, new PartitionKey(id), null, ct);
-        var kittyCatDto = response.Resource;
+        var kittyCat = response.Resource;
+
+        if (kittyCat.IsDeleted)
+        {
+            throw new Exception("Item not found");
+        }
+
         return new KittyClawsDto
         {
-            Id = kittyCatDto.Id,
-            Name = kittyCatDto.Name,
+            Id = kittyCat.Id,
+            Name = kittyCat.Name,
         };
     }
 
     public async Task<IEnumerable<KittyClawsDto>> GetListAsync(CancellationToken ct)
     {
-        var query = _container.GetItemQueryIterator<KittyClaws>();
+        var query = _container.GetItemQueryIterator<KittyClaws>("SELECT * FROM c WHERE c.isDeleted = false");
         var results = new List<KittyClaws>();
 
         while (query.HasMoreResults)

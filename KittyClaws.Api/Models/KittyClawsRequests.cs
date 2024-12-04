@@ -1,16 +1,16 @@
 namespace KittyClaws.Api.Requests;
 
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 public class CreateKittyClawsRequest
 {
-    [JsonPropertyName("name")]
+    [JsonProperty("name")]
     public string Name { get; set; } = default!;
 
-    [JsonPropertyName("createdBy")]
+    [JsonProperty("createdBy")]
     public string CreatedBy { get; set; } = default!;
 
-    [JsonPropertyName("updatedBy")]
+    [JsonProperty("updatedBy")]
     public string UpdatedBy { get; set; } = default!;
 }
 
@@ -19,9 +19,9 @@ public class UpdateKittyClawsRequest
     [JsonIgnore]
     public string Id { get; set; } = default!;
 
-    [JsonPropertyName("name")]
+    [JsonProperty("name")]
     public string Name { get; set; } = default!;
 
-    [JsonPropertyName("updatedBy")]
+    [JsonProperty("updatedBy")]
     public string UpdatedBy { get; set; } = default!;
 }

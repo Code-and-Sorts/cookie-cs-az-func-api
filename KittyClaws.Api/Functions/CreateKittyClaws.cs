@@ -4,34 +4,26 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using KittyClaws.Api.Interfaces;
-using KittyClaws.Api.Requests;
 using KittyClaws.Api.Utils;
-using KittyClaws.Api.Controllers;
+using Microsoft.Azure.Functions.Worker.Http;
 
-public class CreateKittyClaws
+public class CreateKittyClaws(IKittyClawsController kittyCatController, ILogger<CreateKittyClaws> logger)
 {
-    private readonly IKittyClawsController _kittyCatController;
-    private readonly ILogger<CreateKittyClaws> _logger;
+    private readonly IKittyClawsController _kittyCatController = kittyCatController;
+    private readonly ILogger<CreateKittyClaws> _logger = logger;
 
-    public CreateKittyClaws(IKittyClawsController kittyCatController, ILogger<CreateKittyClaws> logger)
-    {
-        _kittyCatController = kittyCatController;
-        _logger = logger;
-    }
-
-    [FunctionName("CreateKittyClaws")]
+    [Function("CreateKittyClaws")]
     public async Task<IActionResult> Post(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "kitties")] CreateKittyClawsRequest createKittyClawsRequest, CancellationToken ct = default)
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "kitties")] HttpRequestData createKittyClawsRequest, CancellationToken ct = default)
     {
         _logger.LogInformation($"{nameof(CreateKittyClaws)} processed a request.");
 
         try
         {
-            var newKittyClawsDto = await _kittyCatController.CreateAsync(createKittyClawsRequest, ct);
+            var newKittyClawsDto = await _kittyCatController.CreateAsync(createKittyClawsRequest.Body, ct);
 
             return new CreatedResult($"/api/kitties", newKittyClawsDto);
         }

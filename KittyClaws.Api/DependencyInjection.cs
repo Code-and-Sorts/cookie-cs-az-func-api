@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services, IConfigurationRoot configuration)
+    public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<IKittyClawsService, KittyClawsService>();
         services.AddScoped<IKittyClawsController, KittyClawsController>();
@@ -21,19 +21,32 @@ public static class DependencyInjection
 
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        string cosmosConnectionString = Environment.GetEnvironmentVariable("CosmosDbConnectionString");
-        string databaseName = Environment.GetEnvironmentVariable("CosmosDbDatabaseName");
-        string containerName = Environment.GetEnvironmentVariable("CosmosDbContainerName");
+        string cosmosConnectionString = configuration.GetValue<string>("CosmosDb") ?? string.Empty;
+        string databaseName = configuration.GetValue<string>("CosmosDbDatabaseName") ?? string.Empty;
+        string containerName = configuration.GetValue<string>("CosmosDbContainerName") ?? string.Empty;
 
-        services.AddSingleton<CosmosClient>(provider =>
-            new CosmosClient(cosmosConnectionString));
+        if (string.IsNullOrEmpty(cosmosConnectionString) || string.IsNullOrEmpty(databaseName) || string.IsNullOrEmpty(containerName))
+        {
+            throw new InvalidOperationException("CosmosDb configuration is missing or incomplete.");
+        }
+
+        services.AddSingleton(provider =>
+            new CosmosClient(cosmosConnectionString)
+        );
 
         services.AddSingleton<IKittyClawsRepository>(provider =>
-            new KittyClawsRepository(
-                provider.GetRequiredService<CosmosClient>(),
+        {
+            var cosmosClient = provider.GetService<CosmosClient>();
+            if (cosmosClient == null)
+            {
+                throw new InvalidOperationException("CosmosDb Client is null.");
+            }
+            return new KittyClawsRepository(
+                cosmosClient,
                 databaseName,
                 containerName
-            ));
+            );
+        });
 
         return services;
     }
